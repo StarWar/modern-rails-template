@@ -1,8 +1,8 @@
-require "fileutils"
-require "shellwords"
-require "tmpdir"
+require 'fileutils'
+require 'shellwords'
+require 'tmpdir'
 
-RAILS_REQUIREMENT = ">= 5.2.0.rc1"
+RAILS_REQUIREMENT = '>= 5.2.2'.freeze
 
 def apply_template!
   assert_minimum_rails_version
@@ -11,7 +11,7 @@ def apply_template!
   # temporary fix bootsnap bug
   # comment_lines 'config/boot.rb', /bootsnap/
 
-  template "Gemfile.tt", force: true
+  template 'Gemfile.tt', force: true
   template 'README.md.tt', force: true
   apply 'config/template.rb'
   apply 'app/template.rb'
@@ -33,7 +33,7 @@ def apply_template!
 
     run 'bundle binstubs bundler --force'
 
-    run 'rails db:create db:migrate'
+    run 'rails db:create'
 
     setup_git
     push_github if @github
@@ -57,31 +57,29 @@ end
 # In that case, use `git clone` to download them to a local temporary dir.
 def add_template_repository_to_source_path
   if __FILE__ =~ %r{\Ahttps?://}
-    source_paths.unshift(tempdir = Dir.mktmpdir("rails-template-"))
+    source_paths.unshift(tempdir = Dir.mktmpdir('rails-template-'))
     at_exit { FileUtils.remove_entry(tempdir) }
-    git :clone => [
-      "--quiet",
-      "https://github.com/damienlethiec/modern-rails-template",
+    git clone: [
+      '--quiet',
+      'https://github.com/damienlethiec/modern-rails-template',
       tempdir
-    ].map(&:shellescape).join(" ")
+    ].map(&:shellescape).join(' ')
   else
     source_paths.unshift(File.dirname(__FILE__))
   end
 end
 
 def gemfile_requirement(name)
-  @original_gemfile ||= IO.read("Gemfile")
+  @original_gemfile ||= IO.read('Gemfile')
   req = @original_gemfile[/gem\s+['"]#{name}['"]\s*(,[><~= \t\d\.\w'"]*)?.*$/, 1]
-  req && req.gsub("'", %(")).strip.sub(/^,\s*"/, ', "')
+  req && req.tr("'", %(")).strip.sub(/^,\s*"/, ', "')
 end
-
-
 
 def ask_optional_options
   @devise = yes?('Do you want to implement authentication in your app with the Devise gem?')
   @pundit = yes?('Do you want to manage authorizations with Pundit?') if @devise
   @uuid = yes?('Do you want to use UUID for active record primary?')
-  @haml = yes?('Do you want to use Haml instead of EBR?')
+  @haml = yes?('Do you want to use Haml instead of ERB?')
   @komponent = yes?('Do you want to adopt a component based design for your front-end?')
   @tailwind = yes?('Do you want to use Tailwind as a CSS framework?')
   @github = yes?('Do you want to push your project to Github?')
@@ -112,14 +110,10 @@ def add_komponent
   insert_into_file 'Gemfile', "gem 'komponent'\n", after: /'friendly_id'\n/
 end
 
-
-
 def setup_uuid
   copy_file 'db/migrate/20180208061510_enable_pg_crypto_extension.rb'
   insert_into_file 'config/initializers/generators.rb', "  g.orm :active_record, primary_key_type: :uuid\n", after: /assets: false\n/
 end
-
-
 
 def setup_front_end
   copy_file '.browserslistrc'
@@ -154,8 +148,6 @@ def add_css_framework
     append_to_file '.postcssrc.yml', "  tailwindcss: './app/javascript/css/tailwind.js'"
   end
 end
-
-
 
 def setup_gems
   setup_friendly_id
@@ -290,8 +282,6 @@ end
 def setup_haml
   run 'HAML_RAILS_DELETE_ERB=true rake haml:erb2haml'
 end
-
-
 
 def setup_git
   git flow: 'init -d'
